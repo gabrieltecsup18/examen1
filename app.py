@@ -71,7 +71,6 @@ def eliminar_registro(dni):
     conn.close()
     return redirect(url_for('administrar'))
 
-if __name__ == '__main__':
-    #Esto es nuevo
-    port = int(os.environ.get('PORT',5000))    
-    app.run(host='0.0.0.0', port=port, debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
