@@ -1,12 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import psycopg2
 import os
-from dotenv import load_dotenv
-
-# ===============================
-# CARGAR VARIABLES DE ENTORNO
-# ===============================
-load_dotenv()
 
 app = Flask(__name__, template_folder='templates')
 
