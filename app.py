@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import psycopg2
 import os
-
 from dotenv import load_dotenv
 
 # ===============================
@@ -33,7 +32,7 @@ def conectar_db():
         )
         return conn
     except psycopg2.Error as e:
-        print("❌ Error al conectar a la base de datos:", e)
+        print("Error al conectar a la base de datos:", e)
         return None
 
 
@@ -42,17 +41,12 @@ def conectar_db():
 # ===============================
 def crear_persona(dni, nombre, apellido, direccion, telefono):
     conn = conectar_db()
-
     if conn is None:
-        print("❌ No se pudo establecer conexión")
+        print("No se pudo establecer conexión")
         return
-
     cursor = conn.cursor()
     cursor.execute(
-        """
-        INSERT INTO personas (dni, nombre, apellido, direccion, telefono)
-        VALUES (%s, %s, %s, %s, %s)
-        """,
+        "INSERT INTO personas (dni, nombre, apellido, direccion, telefono) VALUES (%s, %s, %s, %s, %s)",
         (dni, nombre, apellido, direccion, telefono)
     )
     conn.commit()
@@ -62,10 +56,8 @@ def crear_persona(dni, nombre, apellido, direccion, telefono):
 
 def obtener_registros():
     conn = conectar_db()
-
     if conn is None:
         return []
-
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM personas ORDER BY apellido")
     registros = cursor.fetchall()
@@ -76,10 +68,8 @@ def obtener_registros():
 
 def eliminar_persona(dni):
     conn = conectar_db()
-
     if conn is None:
         return
-
     cursor = conn.cursor()
     cursor.execute("DELETE FROM personas WHERE dni = %s", (dni,))
     conn.commit()
@@ -103,9 +93,7 @@ def registrar():
     apellido = request.form['apellido']
     direccion = request.form['direccion']
     telefono = request.form['telefono']
-
     crear_persona(dni, nombre, apellido, direccion, telefono)
-
     mensaje_confirmacion = "Registro exitoso"
     return redirect(url_for('index', mensaje_confirmacion=mensaje_confirmacion))
 
@@ -126,5 +114,5 @@ def eliminar_registro(dni):
 # EJECUCIÓN
 # ===============================
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
