@@ -1,90 +1,50 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for
+from flask import jsonify
 import psycopg2
 import os
-from dotenv import load_dotenv
-
-# ===============================
-# CARGAR VARIABLES DE ENTORNO
-# ===============================
-load_dotenv()
 
 app = Flask(__name__, template_folder='templates')
 
-# ===============================
-# CONFIGURACIÓN BASE DE DATOS
-# ===============================
-DB_HOST = os.getenv("DB_HOST")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
+# Configuración de la base de datos
+DB_HOST = os.getenv('DB_HOST')
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
 
 
-# ===============================
-# CONEXIÓN A POSTGRESQL
-# ===============================
 def conectar_db():
     try:
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD
-        )
+        # Render provee DATABASE_URL por defecto para conexiones internas/externas
+        db_url = os.getenv('DATABASE_URL')
+        if db_url:
+            conn = psycopg2.connect(db_url)
+        else:
+            conn = psycopg2.connect(
+                dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST)
         return conn
     except psycopg2.Error as e:
         print("Error al conectar a la base de datos:", e)
-        return None
 
 
-# ===============================
-# CRUD
-# ===============================
 def crear_persona(dni, nombre, apellido, direccion, telefono):
     conn = conectar_db()
-    if conn is None:
-        print("No se pudo establecer conexión")
-        return
     cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO personas (dni, nombre, apellido, direccion, telefono) VALUES (%s, %s, %s, %s, %s)",
-        (dni, nombre, apellido, direccion, telefono)
-    )
+    cursor.execute("INSERT INTO personas (dni, nombre, apellido, direccion, telefono) VALUES (%s, %s, %s, %s, %s)",
+                   (dni, nombre, apellido, direccion, telefono))
     conn.commit()
-    cursor.close()
     conn.close()
-
 
 def obtener_registros():
     conn = conectar_db()
-    if conn is None:
-        return []
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM personas ORDER BY apellido")
+    cursor=conn.cursor()
+    cursor.execute("SELECT * FROM personas order by apellido")
     registros = cursor.fetchall()
-    cursor.close()
     conn.close()
     return registros
 
-
-def eliminar_persona(dni):
-    conn = conectar_db()
-    if conn is None:
-        return
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM personas WHERE dni = %s", (dni,))
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-
-# ===============================
-# RUTAS
-# ===============================
 @app.route('/')
 def index():
-    mensaje_confirmacion = request.args.get("mensaje_confirmacion")
-    return render_template('index.html', mensaje_confirmacion=mensaje_confirmacion)
-
+    return render_template('index.html')
 
 @app.route('/registrar', methods=['POST'])
 def registrar():
@@ -94,25 +54,24 @@ def registrar():
     direccion = request.form['direccion']
     telefono = request.form['telefono']
     crear_persona(dni, nombre, apellido, direccion, telefono)
-    mensaje_confirmacion = "Registro exitoso"
+    mensaje_confirmacion = "Registro Exitoso"
     return redirect(url_for('index', mensaje_confirmacion=mensaje_confirmacion))
-
 
 @app.route('/administrar')
 def administrar():
-    registros = obtener_registros()
-    return render_template('administrar.html', registros=registros)
-
+    registros=obtener_registros()
+    return render_template('administrar.html',registros=registros)
 
 @app.route('/eliminar/<dni>', methods=['POST'])
 def eliminar_registro(dni):
-    eliminar_persona(dni)
+    conn = conectar_db()
+    cursor=conn.cursor()
+    cursor.execute("DELETE FROM personas WHERE dni = %s", (dni,))
+    conn.commit()
+    conn.close()
     return redirect(url_for('administrar'))
 
-
-# ===============================
-# EJECUCIÓN
-# ===============================
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    #Esto es nuevo
+    port = int(os.environ.get('PORT',5000))    
+    app.run(host='0.0.0.0', port=port, debug=True)
